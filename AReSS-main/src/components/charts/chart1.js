@@ -29,66 +29,97 @@ const Chart1 = (patology) => {
             sesso: `${selectedSesso}`,
         },
     });
-    const gestisciInvio = async () => {
-        try {
-          const risposta = await fetch('http://localhost:8765/ricevi-dati', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              // Aggiungi eventuali altri header necessari (token di autenticazione, ecc.)
-            },
-            body: JSON.stringify(filtro),
-          });
+    useEffect(() => {
+        const gestisciInvio = async () => {
+            try {
+                console.log("FILTRI:",filtro);
+                const risposta = await fetch('http://localhost:8765/ricevi-dati', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // Aggiungi eventuali altri header necessari (token di autenticazione, ecc.)
+                    },
+                    body: JSON.stringify(filtro),
+                    credentials: 'include',  // Aggiungi questa opzione per includere le credenziali nella richiesta
+                    mode: 'cors',  // Imposta il modo CORS
+                });
+
+                if (!risposta.ok) {
+                    throw new Error('Errore durante la richiesta al server');
+                }
+
+                // Puoi gestire la risposta se necessario
+                const datiRisposta = await risposta.json();
+                console.log(datiRisposta);
+            } catch (errore) {
+                console.error('Errore durante l\'invio dei dati:', errore.message);
+            }
+        };
+
+        gestisciInvio();
+    }, [selectedAnni, selectedEta]);
+    // const gestisciInvio = async () => {
+    //     try {
+    //       const risposta = await fetch('http://localhost:8765/ricevi-dati', {
+    //         method: 'POST',
+    //         headers: {
+    //           'Content-Type': 'application/json',
+    //           // Aggiungi eventuali altri header necessari (token di autenticazione, ecc.)
+    //         },
+    //         body: JSON.stringify(filtro),
+    //       });
     
-          if (!risposta.ok) {
-            throw new Error('Errore durante la richiesta al server');
-          }
+    //       if (!risposta.ok) {
+    //         throw new Error('Errore durante la richiesta al server');
+    //       }
     
-          // Puoi gestire la risposta se necessario
-          const datiRisposta = await risposta.json();
-          console.log(datiRisposta);
-        } catch (errore) {
-          console.error('Errore durante l\'invio dei dati:', errore.message);
-        }
-      };
+    //       // Puoi gestire la risposta se necessario
+    //       const datiRisposta = await risposta.json();
+    //       console.log(datiRisposta);
+    //     } catch (errore) {
+    //       console.error('Errore durante l\'invio dei dati:', errore.message);
+    //     }
+    //   };
 
     //************************************************************************/ 
-    const fetchPopolazioneTumori = async (pageNumber, pageSize) => {
-        try {
-            const response = await fetch(`http://localhost:8765/comunePopolazioneTumoriTest?page=${pageNumber}&limit=${pageSize}`);
-            if (!response.ok) {
-                throw new Error('Errore nella richiesta HTTP');
-            }
-            const data = await response.json();
-            console.log("data", data)
-            return data;
+    // const fetchPopolazioneTumori = async (pageNumber, pageSize) => {
+    //     try {
+    //         const response = await fetch(`http://localhost:8765/comunePopolazioneTumoriTest?page=${pageNumber}&limit=${pageSize}`);
+    //         if (!response.ok) {
+    //             throw new Error('Errore nella richiesta HTTP');
+    //         }
+    //         const data = await response.json();
+    //         console.log("data", data)
+    //         return data;
 
-        } catch (error) {
-            console.error('Errore:', error);
-            return null;
-        }
-    };
-    const fetchAllPopolazioneTumori = async () => {
-        try {
-            const dataPage1 = await fetchPopolazioneTumori(1, 100000);
-            const dataPage2 = await fetchPopolazioneTumori(2, 100000);
+    //     } catch (error) {
+    //         console.error('Errore:', error);
+    //         return null;
+    //     }
+    // };
+    // const fetchAllPopolazioneTumori = async () => {
+    //     try {
+    //         const dataPage1 = await fetchPopolazioneTumori(1, 100000);
+    //         const dataPage2 = await fetchPopolazioneTumori(2, 100000);
 
-            const allData = [...dataPage1, ...dataPage2];
-            console.log(allData);
-            setAllPopolazioneTumori(allData);
-            console.log(allPopolazioneTumori)
-        } catch (error) {
-            console.error('Errore durante il recupero dei dati:', error);
-        }
-    };
-    useEffect(() => {
-        fetchAllPopolazioneTumori();
+    //         const allData = [...dataPage1, ...dataPage2];
+    //         console.log(allData);
+    //         setAllPopolazioneTumori(allData);
+    //         console.log(allPopolazioneTumori)
+    //     } catch (error) {
+    //         console.error('Errore durante il recupero dei dati:', error);
+    //     }
+    // };
+    // useEffect(() => {
+    //     fetchAllPopolazioneTumori();
 
-    }, []);
+    // }, []);
     //************************************************************************/
 
 
     // ANNI SELEZIONABILI
+    
+    
     const [checkboxes, setCheckboxes] = useState([
         { id: 1, label: "2020", checked: true },
         { id: 2, label: "2019", checked: false },
@@ -622,7 +653,7 @@ const Chart1 = (patology) => {
                     />
                 </div>
             </div>
-            <button onClick={gestisciInvio()}>PREMI</button>
+            <button >PREMI</button>
         </div>
     );
 };
