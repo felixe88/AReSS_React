@@ -68,7 +68,7 @@ const Chart1 = (patology) => {
         console.error("Error to send filter");
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("General error:", error);
     }
   };
 
