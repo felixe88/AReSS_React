@@ -2,26 +2,26 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
 const Navbar = () => {
-  const [popolazioneOpen, setPopolazioneOpen] = useState(false);
-  const [cronicitaOpen, setCronicitaOpen] = useState(false);
-  const [tumoriOpen, setTumoriOpen] = useState(false);
+  const [populationOpen, setPopulationOpen] = useState(false);
+  const [chronicityOpen, setChronicityOpen] = useState(false);
+  const [tumorsOpen, setTumorsOpen] = useState(false);
 
   const toggleDropdown = (dropdown) => {
     switch (dropdown) {
       case "popolazione":
-        setPopolazioneOpen(!popolazioneOpen);
-        setCronicitaOpen(false);
-        setTumoriOpen(false);
+        setPopulationOpen(!populationOpen);
+        setChronicityOpen(false);
+        setTumorsOpen(false);
         break;
       case "cronicita":
-        setPopolazioneOpen(false);
-        setCronicitaOpen(!cronicitaOpen);
-        setTumoriOpen(false);
+        setPopulationOpen(false);
+        setChronicityOpen(!chronicityOpen);
+        setTumorsOpen(false);
         break;
       case "tumori":
-        setPopolazioneOpen(false);
-        setCronicitaOpen(false);
-        setTumoriOpen(!tumoriOpen);
+        setPopulationOpen(false);
+        setChronicityOpen(false);
+        setTumorsOpen(!tumorsOpen);
         break;
       default:
         break;
@@ -32,7 +32,7 @@ const Navbar = () => {
     <div>
       <div className="xs:hidden md:block h-10 bg-bg-header text-white">
         <div className="flex space-x-7 ml-12">
-          {/* SECTION POPOLAZIONE */}
+          {/* SECTION POPULATION */}
           <div className="relative inline-block group">
             <button
               className="bg-bg-header text-white px-4 py-2 rounded-md"
@@ -41,7 +41,7 @@ const Navbar = () => {
               Popolazione e Demografia
             </button>
             <div
-              className={`${popolazioneOpen
+              className={`${populationOpen
                   ? "block opacity-100 h-auto"
                   : "hidden opacity-0 h-0"
                 } w-48 absolute z-10 bg-white border rounded-md shadow-lg transition-opacity transition-height duration-300 ease-out`}
@@ -62,7 +62,7 @@ const Navbar = () => {
               </Link>
             </div>
           </div>
-          {/* SECTION CRONICITA' */}
+          {/* SECTION CHRONICITY' */}
           <div className="relative inline-block group">
             <button
               className="bg-bg-header text-white px-4 py-2 rounded-md"
@@ -71,7 +71,7 @@ const Navbar = () => {
               Cronicità
             </button>
             <div
-              className={`${cronicitaOpen
+              className={`${chronicityOpen
                   ? "block opacity-100 h-auto"
                   : "hidden opacity-0 h-0"
                 } mr-11 w-48 absolute z-10 bg-white border rounded-md shadow-lg transition-opacity transition-height duration-300 ease-out `}
@@ -106,7 +106,7 @@ const Navbar = () => {
               </Link>
             </div>
           </div>
-          {/* SECTION TUMORI */}
+          {/* SECTION TUMORS */}
           <div className="relative inline-block group">
             <button
               className="bg-bg-header text-white px-4 py-2 rounded-md"
@@ -115,7 +115,7 @@ const Navbar = () => {
               Tumori
             </button>
             <div
-              className={`${tumoriOpen ? "block opacity-100 h-auto" : "hidden opacity-0 h-0"
+              className={`${tumorsOpen ? "block opacity-100 h-auto" : "hidden opacity-0 h-0"
                 } mr-11 w-40 absolute z-10 bg-white border rounded-md shadow-lg transition-opacity transition-height duration-300 ease-out`}
             >
               <Link

@@ -12,19 +12,19 @@ const Header = () => {
   const toggleDropdown = (dropdown) => {
     switch (dropdown) {
       case "popolazione":
-        setPopolazioneOpen(!popolazioneOpen);
-        setCronicitaOpen(false);
-        setTumoriOpen(false);
+        setPopulationOpen(!populationOpen);
+        setChronicityOpen(false);
+        setTumorsOpen(false);
         break;
       case "cronicita":
-        setPopolazioneOpen(false);
-        setCronicitaOpen(!cronicitaOpen);
-        setTumoriOpen(false);
+        setPopulationOpen(false);
+        setChronicityOpen(!chronicityOpen);
+        setTumorsOpen(false);
         break;
       case "tumori":
-        setPopolazioneOpen(false);
-        setCronicitaOpen(false);
-        setTumoriOpen(!tumoriOpen);
+        setPopulationOpen(false);
+        setChronicityOpen(false);
+        setTumorsOpen(!tumorsOpen);
         break;
       default:
         break;
@@ -33,17 +33,17 @@ const Header = () => {
 
   const CloseSideBar = () => {
     setSidebarOpen(!sidebarOpen);
-    setPopolazioneOpen(false);
-    setCronicitaOpen(false);
-    setTumoriOpen(false);
+    setPopulationOpen(false);
+    setChronicityOpen(false);
+    setTumorsOpen(false);
   };
-  const [popolazioneOpen, setPopolazioneOpen] = useState(false);
-  const [cronicitaOpen, setCronicitaOpen] = useState(false);
-  const [tumoriOpen, setTumoriOpen] = useState(false);
+  const [populationOpen, setPopulationOpen] = useState(false);
+  const [chronicityOpen, setChronicityOpen] = useState(false);
+  const [tumorsOpen, setTumorsOpen] = useState(false);
 
   return (
     <div className="flex h-36 bg-bg-header ">
-      {/* SIDEBAR SOTTO I 720PX */}
+      {/* SIDEBAR UNDER 720PX */}
       <div className=" pt-12 pl-5 sm:block md:hidden">
         <svg
           viewBox="0 0 24 24"
@@ -105,7 +105,7 @@ const Header = () => {
               </svg>
               <div className="h-96 block w-auto absolute">
                 <div className=" flex flex-col items-start space-y-7 text-red-600 underline text-lg">
-                  {/* POPOLAZIONE SECTION */}
+                  {/* POPULATION SECTION */}
                   <div className=" relative inline-block group">
                     <label
                       className="px-4 py-2 rounded-md"
@@ -114,7 +114,7 @@ const Header = () => {
                       Popolazione e Demografia
                     </label>
                     <div
-                      className={`${popolazioneOpen ? "block" : "hidden"
+                      className={`${populationOpen ? "block" : "hidden"
                         } w-48 z-10 bg-white  rounded-md `}
                     >
                       <Link
@@ -133,7 +133,7 @@ const Header = () => {
                       </Link>
                     </div>
                   </div>
-                  {/* CRONICITA' SECTION */}
+                  {/* CHRONICITY' SECTION */}
                   <div className=" relative inline-block group">
                     <label
                       className="flex px-4 py-2  "
@@ -142,7 +142,7 @@ const Header = () => {
                       Cronicità
                     </label>
                     <div
-                      className={`${cronicitaOpen ? "block" : "hidden"
+                      className={`${chronicityOpen ? "block" : "hidden"
                         } ml-12 w-48 z-10 bg-white `}
                     >
                       <Link
@@ -175,7 +175,7 @@ const Header = () => {
                       </Link>
                     </div>
                   </div>
-                  {/* TUMORI SECTION */}
+                  {/* TUMORS SECTION */}
                   <div className="relative inline-block group">
                     <label
                       className="flex px-4 py-2 rounded-md"
@@ -184,7 +184,7 @@ const Header = () => {
                       Tumori
                     </label>
                     <div
-                      className={`${tumoriOpen ? "block" : "hidden"
+                      className={`${tumorsOpen ? "block" : "hidden"
                         } mr-11 w-40 z-10 bg-white `}
                     >
                       <Link

@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from "react";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
-import highchartsMore from "highcharts/highcharts-more"; // Importa il modulo highcharts-more per columnrange
+import highchartsMore from "highcharts/highcharts-more";
 
 const Chart1 = (patology) => {
-  const [isTassoOpen, setTassoOpen] = useState(false);
-  const [TassoName, setTassoName] = useState("Tasso standard");
-  const [selectedTasso, setSelectedTasso] = useState("Tasso standard");
+  const [isRateOpen, setRateOpen] = useState(false);
+  const [RateName, setRateName] = useState("Tasso standard");
+  const [selectedRate, setSelectedRate] = useState("Tasso standard");
 
-  const [isAnnoVisible, setAnnoVisible] = useState(false);
-  const [selectedAnni, setSelectedAnni] = useState("2020");
+  const [isYearVisible, setYearVisible] = useState(false);
+  const [selectedYears, setSelectedYears] = useState("2020");
 
-  const [isSessoOpen, setSessoOpen] = useState(false);
-  const [selectedSesso, setSelectedSesso] = useState("Maschi e Femmine");
+  const [isSexOpen, setSexOpen] = useState(false);
+  const [selectedSex, setSelectedSex] = useState("Maschi e Femmine");
 
-  const [isEtaVisible, setEtaVisible] = useState(false);
-  const [selectedEta, setSelectedEta] = useState([
+  const [isAgeVisible, setAgeVisible] = useState(false);
+  const [selectedAge, setSelectedAge] = useState([
     "0-4",
     "5-9",
     "10-14",
@@ -37,33 +37,26 @@ const Chart1 = (patology) => {
     ">=90",
   ]);
 
-  const [allPopolazioneTumori, setAllPopolazioneTumori] = useState([]);
-
-  // const [filtro, setFiltro]= useState({
-  //     Patologia: patology.name,
-  //     filtri: {
-  //         anno: `${selectedAnni}`,
-  //         eta: `${selectedEta}`,
-  //         sesso: `${selectedSesso}`,
-  //     },
-  // });
+  const [allTumorPopulation, setAllTumorPopulation] = useState([]);
 
   const sendFilter = async (filter) => {
     try {
-      console.log("filtri:", filter);
+      console.log("filter:", filter);
+
       const response = await fetch(
-        "http://localhost:8765/chart1/handleFilters",
+        `http://localhost:8000/ricevi-filtri`,
         {
           method: "POST",
           headers: {
+            'Accept':'application/json',
             "Content-Type": "application/json",
           },
           body: JSON.stringify(filter),
         }
       );
-
       if (response.ok) {
         console.log("Filter send succesfully!");
+        console.log(response.json());
       } else {
         console.error("Error to send filter");
       }
@@ -76,9 +69,9 @@ const Chart1 = (patology) => {
     const newFilters = {
       Patologia: patology.name,
       filtri: {
-        anno: `${selectedAnni}`,
-        eta: `${selectedEta}`,
-        sesso: `${selectedSesso}`,
+        years: `${selectedYears}`,
+        eta: `${selectedAge}`,
+        sex: `${selectedSex}`,
       },
     };
     sendFilter(newFilters);
@@ -86,97 +79,7 @@ const Chart1 = (patology) => {
 
   useEffect(() => {
     handleChangeFilters();
-  }, [selectedAnni, selectedEta, selectedSesso]);
-
-  // useEffect(() => {
-  // const gestisciInvio = async () => {
-  //     try {
-  //         console.log("FILTRI:",filtro);
-  //         const risposta = await fetch('http://localhost:8765/ricevi-dati', {
-  //             method: 'POST',
-  //             headers: {
-  //                 'Content-Type': 'application/json',
-  //                 // Aggiungi eventuali altri header necessari (token di autenticazione, ecc.)
-  //             },
-  //             body: JSON.stringify(filtro),
-  //             credentials: 'include',  // Aggiungi questa opzione per includere le credenziali nella richiesta
-  //             mode: 'cors',  // Imposta il modo CORS
-  //         });
-
-  //         if (!risposta.ok) {
-  //             throw new Error('Errore durante la richiesta al server');
-  //         }
-
-  //         // Puoi gestire la risposta se necessario
-  //         const datiRisposta = await risposta.json();
-  //         console.log(datiRisposta);
-  //     } catch (errore) {
-  //         console.error('Errore durante l\'invio dei dati:', errore.message);
-  //     }
-  // };
-
-  // gestisciInvio();
-  // }, [selectedAnni, selectedEta]);
-
-  // const gestisciInvio = async () => {
-  //     try {
-  //       const risposta = await fetch('http://localhost:8765/ricevi-dati', {
-  //         method: 'POST',
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //           // Aggiungi eventuali altri header necessari (token di autenticazione, ecc.)
-  //         },
-  //         body: JSON.stringify(filtro),
-  //       });
-
-  //       if (!risposta.ok) {
-  //         throw new Error('Errore durante la richiesta al server');
-  //       }
-
-  //       // Puoi gestire la risposta se necessario
-  //       const datiRisposta = await risposta.json();
-  //       console.log(datiRisposta);
-  //     } catch (errore) {
-  //       console.error('Errore durante l\'invio dei dati:', errore.message);
-  //     }
-  //   };
-
-  //************************************************************************/
-  // const fetchPopolazioneTumori = async (pageNumber, pageSize) => {
-  //     try {
-  //         const response = await fetch(`http://localhost:8765/comunePopolazioneTumoriTest?page=${pageNumber}&limit=${pageSize}`);
-  //         if (!response.ok) {
-  //             throw new Error('Errore nella richiesta HTTP');
-  //         }
-  //         const data = await response.json();
-  //         console.log("data", data)
-  //         return data;
-
-  //     } catch (error) {
-  //         console.error('Errore:', error);
-  //         return null;
-  //     }
-  // };
-  // const fetchAllPopolazioneTumori = async () => {
-  //     try {
-  //         const dataPage1 = await fetchPopolazioneTumori(1, 100000);
-  //         const dataPage2 = await fetchPopolazioneTumori(2, 100000);
-
-  //         const allData = [...dataPage1, ...dataPage2];
-  //         console.log(allData);
-  //         setAllPopolazioneTumori(allData);
-  //         console.log(allPopolazioneTumori)
-  //     } catch (error) {
-  //         console.error('Errore durante il recupero dei dati:', error);
-  //     }
-  // };
-  // useEffect(() => {
-  //     fetchAllPopolazioneTumori();
-
-  // }, []);
-  //************************************************************************/
-
-  // ANNI SELEZIONABILI
+  }, [selectedYears, selectedAge, selectedSex]);
 
   const [checkboxes, setCheckboxes] = useState([
     { id: 1, label: "2020", checked: true },
@@ -196,8 +99,8 @@ const Chart1 = (patology) => {
     { id: 15, label: "2006", checked: false },
   ]);
 
-  // ETA SELEZIONABILI
-  const [etaOptions, setEtaOptions] = useState([
+  // SELECTABLE AGES
+  const [ageOptions, setAgeOptions] = useState([
     { id: 1, label: "0-4", checked: true },
     { id: 2, label: "5-9", checked: true },
     { id: 3, label: "10-14", checked: true },
@@ -219,45 +122,45 @@ const Chart1 = (patology) => {
     { id: 19, label: ">=90", checked: true },
   ]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchTermEta, setSearchTermEta] = useState("");
+  const [searchTermAge, setSearchTermAge] = useState("");
 
-  // CHIUSURA/APERTURA FILTRI
+  // CLOSING/OPENING FILTERS
   const toggleDropdownFiltri = (dropdown) => {
     switch (dropdown) {
-      case "tasso":
-        setTassoOpen(!isTassoOpen);
-        setAnnoVisible(false);
-        setSessoOpen(false);
-        setEtaVisible(false);
+      case "rate":
+        setRateOpen(!isRateOpen);
+        setYearVisible(false);
+        setSexOpen(false);
+        setAgeVisible(false);
         break;
-      case "sesso":
-        setTassoOpen(false);
-        setAnnoVisible(false);
-        setSessoOpen(!isSessoOpen);
-        setEtaVisible(false);
+      case "sex":
+        setRateOpen(false);
+        setYearVisible(false);
+        setSexOpen(!isSexOpen);
+        setAgeVisible(false);
         break;
-      case "anno":
-        setTassoOpen(false);
-        setAnnoVisible(!isAnnoVisible);
-        setSessoOpen(false);
-        setEtaVisible(false);
+      case "years":
+        setRateOpen(false);
+        setYearVisible(!isYearVisible);
+        setSexOpen(false);
+        setAgeVisible(false);
         break;
-      case "età":
-        setEtaVisible(!isEtaVisible);
-        setSessoOpen(false);
-        setAnnoVisible(false);
-        setTassoOpen(false);
+      case "ages":
+        setAgeVisible(!isAgeVisible);
+        setSexOpen(false);
+        setYearVisible(false);
+        setRateOpen(false);
         break;
       default:
-        setEtaVisible(false);
-        setAnnoVisible(false);
-        setEtaVisible(false);
-        setTassoOpen(false);
+        setAgeVisible(false);
+        setYearVisible(false);
+        setAgeVisible(false);
+        setRateOpen(false);
     }
   };
 
-  const handleAnnoVisible = () => {
-    setAnnoVisible(!isAnnoVisible);
+  const handleYearVisible = () => {
+    setYearVisible(!isYearVisible);
   };
 
   const handleCheckboxChange = (id) => {
@@ -272,8 +175,8 @@ const Chart1 = (patology) => {
         .filter((checkbox) => checkbox.checked)
         .map((checkbox) => checkbox.label);
 
-      setSelectedAnni(selectedYears);
-      console.log("Anni selezionati", selectedYears);
+      setSelectedYears(selectedYears);
+      console.log("selected Years", selectedYears);
       return updatedCheckboxes;
     });
   };
@@ -281,19 +184,19 @@ const Chart1 = (patology) => {
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
   };
-  //  PULIZIA ANNI
+  // CLEANING YEARS
   const handleClearAll = () => {
     setCheckboxes((prevCheckboxes) => {
       const updatedCheckboxes = prevCheckboxes.map((checkbox) => ({
         ...checkbox,
         checked: false,
       }));
-      setSelectedAnni([]);
+      setSelectedYears([]);
 
       return updatedCheckboxes;
     });
   };
-  // SELEZIONA TUTTI GLI ANNI
+  // SELECT ALL YEARS
   const handleSelectAll = () => {
     setCheckboxes((prevCheckboxes) => {
       const updatedCheckboxes = prevCheckboxes.map((checkbox) => ({
@@ -302,7 +205,7 @@ const Chart1 = (patology) => {
           .toLowerCase()
           .includes(searchTerm.toLowerCase()),
       }));
-      setSelectedAnni(
+      setSelectedYears(
         updatedCheckboxes
           .filter((checkbox) => checkbox.checked)
           .map((checkbox) => checkbox.label)
@@ -310,47 +213,47 @@ const Chart1 = (patology) => {
       return updatedCheckboxes;
     });
   };
-  // SELEZIONA TUTTE LE ETA
-  const handleSelectAllEta = () => {
-    setEtaOptions((prevEtaOptions) => {
-      const updateEta = prevEtaOptions.map((option) => ({
+  // SELECT ALL AGES
+  const handleSelectAllYears = () => {
+    setAgeOptions((prevAgeOptions) => {
+      const updateAge = prevAgeOptions.map((option) => ({
         ...option,
         checked:
-          option.label.toLowerCase().includes(searchTermEta.toLowerCase()) ||
+          option.label.toLowerCase().includes(searchTermAge.toLowerCase()) ||
           option.checked,
       }));
-      setSelectedEta(
-        updateEta
+      setSelectedAge(
+        updateAge
           .filter((checkbox) => checkbox.checked)
           .map((checkbox) => checkbox.label)
       );
-      return updateEta;
+      return updateAge;
     });
   };
 
-  // PULIZIA ETA
-  const handleClearAllEta = () => {
-    setEtaOptions((prevEtaOptions) => {
-      const updateEta = prevEtaOptions.map((option) => ({
+  // CLEANING AGE
+  const handleSelectAllAge = () => {
+    setAgeOptions((prevAgeOptions) => {
+      const updateAge = prevAgeOptions.map((option) => ({
         ...option,
         checked: false,
       }));
-      setSelectedEta([]);
-      return updateEta;
+      setSelectedAge([]);
+      return updateAge;
     });
   };
 
-  const handleEtaOptionChange = (id) => {
-    setEtaOptions((prevEtaOptions) => {
-      const updateEta = prevEtaOptions.map((option) =>
+  const handleAgeOptionChange = (id) => {
+    setAgeOptions((prevAgeOptions) => {
+      const updateAge = prevAgeOptions.map((option) =>
         option.id === id ? { ...option, checked: !option.checked } : option
       );
-      const selectedEta = updateEta
+      const selectedAge = updateAge
         .filter((option) => option.checked)
         .map((option) => option.label);
-      setSelectedEta(selectedEta);
-      console.log("Età selezionate", selectedEta);
-      return updateEta;
+      setSelectedAge(selectedAge);
+      console.log("Selected ages", selectedAge);
+      return updateAge;
     });
   };
 
@@ -358,71 +261,65 @@ const Chart1 = (patology) => {
     checkbox.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredEtaOptions = etaOptions.filter((option) =>
-    option.label.toLowerCase().includes(searchTermEta.toLowerCase())
+  const filteredEtaOptions = ageOptions.filter((option) =>
+    option.label.toLowerCase().includes(searchTermAge.toLowerCase())
   );
 
-  const handleTasso = (tassoName) => {
-    if (selectedTasso !== tassoName) {
-      setSelectedTasso(tassoName);
+  const handleRate = (RateName) => {
+    if (selectedRate !== RateName) {
+      setSelectedRate(RateName);
     }
-    setTassoOpen(!isTassoOpen);
+    setRateOpen(!isRateOpen);
   };
 
-  const handleSesso = () => {
-    setSessoOpen(!isSessoOpen);
+  const handleSex = () => {
+    setSexOpen(!isSexOpen);
   };
 
-  // RIPRISTINA ALLE IMPOSTAZIONI INIZIALI
-  const ripristina = () => {
-    setSelectedTasso("Tasso standard");
-    setTassoName("Tasso standard");
-    setSelectedAnni([]);
+  // RESTORE TO INITIAL SETTINGS
+  const restore = () => {
+    setSelectedRate("Tasso standard");
+    setRateName("Tasso standard");
+    setSelectedYears([]);
     setCheckboxes((prevCheckboxes) => {
       const updatedCheckboxes = prevCheckboxes.map((checkbox) => ({
         ...checkbox,
         checked: false,
       }));
-      setSelectedAnni([]);
+      setSelectedYears([]);
       return updatedCheckboxes;
     });
-    setEtaOptions((prevEtaOptions) => {
-      const updateEta = prevEtaOptions.map((option) => ({
+    setAgeOptions((prevAgeOptions) => {
+      const updateAge = prevAgeOptions.map((option) => ({
         ...option,
         checked:
-          option.label.toLowerCase().includes(searchTermEta.toLowerCase()) ||
+          option.label.toLowerCase().includes(searchTermAge.toLowerCase()) ||
           option.checked,
       }));
-      setSelectedEta(
-        updateEta
+      setSelectedAge(
+        updateAge
           .filter((checkbox) => checkbox.checked)
           .map((checkbox) => checkbox.label)
       );
-      return updateEta;
+      return updateAge;
     });
-    setSelectedSesso("Maschi e Femmine");
-    setSelectedEta([]);
-    console.log("TASSO DOPO IL RIPRISTINO :", selectedTasso);
-    console.log("ANNI DOPO IL RIPRISTINO :", selectedAnni);
-    console.log("SESSO DOPO IL RIPRISTINO :", selectedSesso);
-    console.log("ETA' DOPO IL RIPRISTINO :", selectedEta);
+    setSelectedSex("Maschi e Femmine");
+    setSelectedAge([]);
+    console.log("RATE AFTER RESTORATION:", selectedRate);
+    console.log("YEARS AFTER RESTORATION:", selectedYears);
+    console.log("SEX AFTER RESTORATION:", selectedSex);
+    console.log("AGE AFTER RESTORATION:", selectedAge);
   };
-
-  let data = allPopolazioneTumori.reduce((acc, item) => {
-    acc[item.IDComune] = true;
-    return acc;
-  }, {});
-  let arrayDiIDComune = Object.keys(data);
 
   highchartsMore(Highcharts);
 
-  // IMPOSTAZIONI GRAFICO
+  // CHART SETTINGS
   const options = {
     title: {
       text: "Incidenza Polmonare per ASL e Regione",
     },
     subtitle: {
-      text: `polmone, ${selectedAnni},TS, Regione, Asl, ${selectedSesso}, ${selectedEta}`,
+      text: `polmone, ${selectedYears},TS, Regione, Asl, ${selectedSex}, ${selectedAge}`,
     },
     xAxis: {
       title: null,
@@ -466,7 +363,7 @@ const Chart1 = (patology) => {
         // data: values,
         zIndex: 1,
         tooltip: {
-          pointFormat: TassoName + ": {point.y}",
+          pointFormat: RateName + ": {point.y}",
         },
       },
       {
@@ -485,33 +382,33 @@ const Chart1 = (patology) => {
   return (
     <div>
       <div className="mt-5">
-        {/* FILTRI */}
+        {/* FILTERS */}
         <div className="flex xs:flex-col sm:flex-row items-center space-x-3 xs:pl-2 md:pl-4 lg:pl-16 w-auto justify-between ">
           <div className="flex sm:flex-row items-center space-x-3 xs:pl-2 sm:pl-4 w-auto ">
-            {/* TASSO */}
+            {/* RATE */}
             <div className="xs:w-20 md:w-28 lg:w-32 ">
               <button
                 className="xs:h-7 md:h-5 xs:w-20 md:w-28 lg:w-32 xs:text-xs md:text-base bg-gray-200 border border-black flex items-center justify-center"
                 onClick={() => {
-                  handleTasso(selectedTasso);
-                  toggleDropdownFiltri("tasso");
+                  handleRate(selectedRate);
+                  toggleDropdownFiltri("rate");
                 }}
               >
-                {TassoName}
+                {RateName}
               </button>
-              {isTassoOpen && (
+              {isRateOpen && (
                 <div className="pr-32">
                   <div className=" flex flex-col p-1 h-20 w-40 bg-white border border-gray-400 absolute z-10 rounded-md">
                     <div class="flex mt-1">
                       <input
-                        checked={TassoName === "Tasso standard"}
+                        checked={RateName === "Tasso standard"}
                         id="TassoStandard"
                         type="radio"
                         value="Tasso standard"
-                        name="tassi"
+                        name="rate"
                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
                         onClick={() => {
-                          setTassoName("Tasso standard");
+                          setRateName("Tasso standard");
                         }}
                       />
                       <label
@@ -523,14 +420,14 @@ const Chart1 = (patology) => {
                     </div>
                     <div className="flex ">
                       <input
-                        checked={TassoName === "Tasso grezzo"}
+                        checked={RateName === "Tasso grezzo"}
                         id="TassoGrezzo"
                         type="radio"
                         value="Tasso grezzo"
-                        name="tassi"
+                        name="rate"
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                         onClick={() => {
-                          setTassoName("Tasso grezzo");
+                          setRateName("Tasso grezzo");
                         }}
                       />
                       <label
@@ -542,14 +439,14 @@ const Chart1 = (patology) => {
                     </div>
                     <div className="flex ">
                       <input
-                        checked={TassoName === "SIR"}
+                        checked={RateName === "SIR"}
                         id="SIR"
                         type="radio"
                         value="SIR"
-                        name="tassi"
+                        name="rate"
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                         onClick={() => {
-                          setTassoName("SIR");
+                          setRateName("SIR");
                         }}
                       />
                       <label
@@ -563,29 +460,29 @@ const Chart1 = (patology) => {
                 </div>
               )}
             </div>
-            {/* ANNO */}
+            {/* YEARS */}
             <div className="xs:w-20  md:w-28 lg:w-32">
               <button
                 className="xs:h-7 md:h-5 xs:w-20 md:w-28 lg:w-32 bg-gray-200 border border-black flex items-center justify-center "
                 onClick={() => {
-                  handleAnnoVisible();
-                  toggleDropdownFiltri("anno");
+                  handleYearVisible();
+                  toggleDropdownFiltri("years");
                 }}
               >
-                {selectedAnni.length > 0 ? (
-                  selectedAnni.length > 3 ? (
+                {selectedYears.length > 0 ? (
+                  selectedYears.length > 3 ? (
                     <p className="xs:text-xs md:text-base">
                       {" "}
-                      {selectedAnni.length} selezionati
+                      {selectedYears.length} selezionati
                     </p>
                   ) : (
-                    selectedAnni.join(", ")
+                    selectedYears.join(", ")
                   )
                 ) : (
                   "Anni"
                 )}
               </button>
-              {isAnnoVisible && (
+              {isYearVisible && (
                 <div className="w-36 h-40 overflow-auto flex flex-col  bg-white border border-black absolute z-10 rounded-md">
                   <input
                     type="text"
@@ -625,37 +522,37 @@ const Chart1 = (patology) => {
                 </div>
               )}
             </div>
-            {/* SESSO */}
+            {/* SEX */}
             <div className="xs:w-20  md:w-28 lg:w-32">
               <button
                 className="xs:h-7 md:h-5 xs:w-20 md:w-28 lg:w-32 bg-gray-200 border border-black flex items-center justify-center"
                 onClick={() => {
-                  handleSesso(selectedSesso);
-                  toggleDropdownFiltri("sesso");
+                  handleSex(selectedSex);
+                  toggleDropdownFiltri("sex");
                 }}
               >
                 <p
                   className={
-                    selectedSesso === "Maschi e Femmine" &&
+                    selectedSex === "Maschi e Femmine" &&
                     "xs:text-xs lg:text-sm"
                   }
                 >
-                  {selectedSesso}
+                  {selectedSex}
                 </p>
               </button>
-              {isSessoOpen && (
+              {isSexOpen && (
                 <div className="pr-32">
                   <div className=" flex flex-col p-1 h-20 w-44 bg-white border border-gray-400 rounded-md absolute z-10">
                     <div class="flex mt-1">
                       <input
-                        checked={selectedSesso === "Maschi e Femmine"}
+                        checked={selectedSex === "Maschi e Femmine"}
                         id="Maschi e Femmine"
                         type="radio"
                         value="Maschi e Femmine"
-                        name="sesso"
+                        name="sex"
                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
                         onClick={() => {
-                          setSelectedSesso("Maschi e Femmine");
+                          setSelectedSex("Maschi e Femmine");
                         }}
                       />
                       <label
@@ -667,14 +564,14 @@ const Chart1 = (patology) => {
                     </div>
                     <div class="flex mt-1">
                       <input
-                        checked={selectedSesso === "Maschi"}
+                        checked={selectedSex === "Maschi"}
                         id="Maschi"
                         type="radio"
                         value="Maschi"
-                        name="sesso"
+                        name="sex"
                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
                         onClick={() => {
-                          setSelectedSesso("Maschi");
+                          setSelectedSex("Maschi");
                         }}
                       />
                       <label
@@ -686,14 +583,14 @@ const Chart1 = (patology) => {
                     </div>
                     <div class="flex mt-1">
                       <input
-                        checked={selectedSesso === "Femmine"}
+                        checked={selectedSex === "Femmine"}
                         id="Femmine"
                         type="radio"
                         value="Femmine"
-                        name="sesso"
+                        name="sex"
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
                         onClick={() => {
-                          setSelectedSesso("Femmine");
+                          setSelectedSex("Femmine");
                         }}
                       />
                       <label
@@ -707,43 +604,43 @@ const Chart1 = (patology) => {
                 </div>
               )}
             </div>
-            {/* ETA' */}
+            {/* AGE */}
             <div className="xs:w-20 md:w-28 lg:w-32">
               <button
                 className="xs:h-7 md:h-5 xs:w-20 md:w-28 lg:w-32 bg-gray-200 border border-black flex items-center justify-center"
                 onClick={() => {
-                  handleEtaOptionChange();
-                  toggleDropdownFiltri("età");
+                  handleAgeOptionChange();
+                  toggleDropdownFiltri("ages");
                 }}
               >
-                {selectedEta.length > 0 ? (
-                  selectedEta.length > 3 ? (
+                {selectedAge.length > 0 ? (
+                  selectedAge.length > 3 ? (
                     <p className="xs:text-xs md:text-base">
-                      {selectedEta.length} selezionati
+                      {selectedAge.length} selezionati
                     </p>
                   ) : (
-                    selectedEta.join(", ")
+                    selectedAge.join(", ")
                   )
                 ) : (
                   "Età"
                 )}
               </button>
-              {isEtaVisible && (
+              {isAgeVisible && (
                 <div className="w-36 h-40 overflow-auto flex flex-col items-center bg-white border border-black absolute z-10 rounded-md">
                   <input
                     type="text"
                     placeholder="Ricerca..."
-                    value={searchTermEta}
-                    onChange={(e) => setSearchTermEta(e.target.value)}
+                    value={searchTermAge}
+                    onChange={(e) => setSearchTermAge(e.target.value)}
                     className="w-28 m-1"
                   />
                   <button
                     className="w-28 border hover:bg-gray-400 hover:text-white rounded-lg m-1"
-                    onClick={handleClearAllEta}
+                    onClick={handleSelectAllAge}
                   >
                     Pulisci
                   </button>
-                  <button onClick={handleSelectAllEta}>Seleziona tutti</button>
+                  <button onClick={handleSelectAllYears}>Seleziona tutti</button>
                   {filteredEtaOptions.map((option) => (
                     <div
                       className={` w-full flex hover:bg-gray-400 pl-1 pr-1 ${
@@ -753,13 +650,13 @@ const Chart1 = (patology) => {
                     >
                       <input
                         type="checkbox"
-                        id={`checkbox-eta-${option.id}`}
+                        id={`checkbox-age-${option.id}`}
                         checked={option.checked}
-                        onChange={() => handleEtaOptionChange(option.id)}
+                        onChange={() => handleAgeOptionChange(option.id)}
                       />
                       <label
                         className="ml-3"
-                        htmlFor={`checkbox-eta-${option.id}`}
+                        htmlFor={`checkbox-age-${option.id}`}
                       >
                         {option.label}
                       </label>
@@ -769,12 +666,12 @@ const Chart1 = (patology) => {
               )}
             </div>
           </div>
-          {/* IMPORTA/ESPORTA */}
+          {/* IMPORT/EXPORT */}
           <div className="flex xs:mt-2 sm:mt-0 flex-row items-center space-x-3  w-auto ">
             <div className="flex space-x-3 xs:pr-1 md:pr-0 lg:pr-8 ">
               <button
                 className="xs:h-7 md:h-5 xs:w-16 md:w-24 bg-gray-200 border border-black flex items-center justify-center"
-                onClick={ripristina}
+                onClick={restore}
               >
                 Ripristina
               </button>

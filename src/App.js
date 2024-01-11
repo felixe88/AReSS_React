@@ -4,9 +4,8 @@ import Home from "./components/home";
 import Header from "./components/header";
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
-import Polmone from "./components/polmone";
-import Test from "./components/test";
-import Server from "./Chiamate/server";
+import Lungs from "./components/lungs";
+import Server from "./api/server";
 
 function App() {
   return (
@@ -17,8 +16,7 @@ function App() {
         <Routes>
           <Route path="/" exact element={<Home />} />
           <Route path="/Popolazione" exact element="" />
-          <Route path="/Polmoni" exact element={<Polmone />} />
-          <Route path="/test" exact element={<Test />} />
+          <Route path="/Polmoni" exact element={<Lungs />} />
           <Route path="/server" exact element={<Server />} />
         </Routes>
         <Footer />

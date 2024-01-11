@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import Chart1 from "./charts/chart1";
 
-const Polmone = () => {
+const Lungs = () => {
 
   return (
     <div >
@@ -10,4 +10,4 @@ const Polmone = () => {
   );
 };
 
-export default Polmone;
+export default Lungs;
