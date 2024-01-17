@@ -42,7 +42,7 @@ const Chart1 = (patology) => {
   const sendFilter = async ($filter) => {
     try {
       console.log("filter:", $filter);
-      const response = await fetch('http://localhost:8000/ricevi-filtri',
+      const response = await fetch('http://localhost:8000/query-patologie',
         {
           method: "POST",
           headers: {
