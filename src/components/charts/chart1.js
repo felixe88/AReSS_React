@@ -39,26 +39,24 @@ const Chart1 = (patology) => {
 
   const [allTumorPopulation, setAllTumorPopulation] = useState([]);
 
-  const sendFilter = async (filter) => {
+  const sendFilter = async ($filter) => {
     try {
-      console.log("filter:", filter);
-
-      const response = await fetch(
-        `http://localhost:8000/ricevi-filtri`,
+      console.log("filter:", $filter);
+      const response = await fetch('http://localhost:8000/ricevi-filtri',
         {
           method: "POST",
           headers: {
             'Accept':'application/json',
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(filter),
+          body: JSON.stringify($filter),
         }
       );
       if (response.ok) {
-        console.log("Filter send succesfully!");
-        console.log(response.json());
+        const responseData = await response.json();
+        console.log("Filter send succesfully!", responseData);
       } else {
-        console.error("Error to send filter");
+        console.error("Error to send filter", response.status, response.statusText);
       }
     } catch (error) {
       console.error("General error:", error);
@@ -67,10 +65,10 @@ const Chart1 = (patology) => {
 
   const handleChangeFilters = () => {
     const newFilters = {
-      Patologia: patology.name,
-      filtri: {
+      patology: patology.name,
+      filters: {
         years: `${selectedYears}`,
-        eta: `${selectedAge}`,
+        age: `${selectedAge}`,
         sex: `${selectedSex}`,
       },
     };
@@ -380,6 +378,7 @@ const Chart1 = (patology) => {
   };
 
   return (
+    
     <div>
       <div className="mt-5">
         {/* FILTERS */}

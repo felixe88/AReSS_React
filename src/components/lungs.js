@@ -5,7 +5,7 @@ const Lungs = () => {
 
   return (
     <div >
-      <Chart1 name="polmone" />
+      <Chart1 name="Polmone" />
     </div>
   );
 };
