@@ -5,11 +5,12 @@ import highchartsMore from "highcharts/highcharts-more";
 
 const Chart1 = (patology) => {
   const [isRateOpen, setRateOpen] = useState(false);
-  const [RateName, setRateName] = useState("Tasso standard");
-  const [selectedRate, setSelectedRate] = useState("Tasso standard");
+
+  const [RateName, setRateName] = useState("Tasso grezzo");
+  const [selectedRate, setSelectedRate] = useState("Tasso grezzo");
 
   const [isYearVisible, setYearVisible] = useState(false);
-  const [selectedYears, setSelectedYears] = useState("2020");
+  const [selectedYears, setSelectedYears] = useState(2020);
 
   const [isSexOpen, setSexOpen] = useState(false);
   const [selectedSex, setSelectedSex] = useState("Maschi e Femmine");
@@ -39,62 +40,116 @@ const Chart1 = (patology) => {
 
   const [allTumorPopulation, setAllTumorPopulation] = useState([]);
 
+  // *****************************RECIVE THE DATA*****************************
+  let data = [];
   const sendFilter = async ($filter) => {
     try {
       console.log("filter:", $filter);
-      const response = await fetch('http://localhost:8000/query-patologie',
-        {
-          method: "POST",
-          headers: {
-            'Accept':'application/json',
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify($filter),
-        }
-      );
+      const response = await fetch("http://localhost:8000/query-patologie", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify($filter),
+      });
       if (response.ok) {
         const responseData = await response.json();
-        console.log("Filter send succesfully!", responseData);
+        data = responseData;
+        return data;
       } else {
-        console.error("Error to send filter", response.status, response.statusText);
+        console.error(
+          "Error to send filter",
+          response.status,
+          response.statusText
+        );
       }
     } catch (error) {
       console.error("General error:", error);
     }
   };
 
-  const handleChangeFilters = () => {
-    const newFilters = {
-      patology: patology.name,
-      filters: {
-        years: `${selectedYears}`,
-        age: `${selectedAge}`,
-        sex: `${selectedSex}`,
-      },
-    };
-    sendFilter(newFilters);
-  };
+  // *****************************FUNCTION FOR CALCULATIONS*****************************
 
-  useEffect(() => {
-    handleChangeFilters();
-  }, [selectedYears, selectedAge, selectedSex]);
+  function getTotal(column, reference, columnReference, dataset) {
+    let tempDataset = null,
+      container = {};
+    reference.forEach((el) => {
+      let sum = 0;
+      tempDataset = dataset.filter((d) => d[columnReference] === el);
+      tempDataset.forEach((row) => {
+        sum += row[column];
+      });
+      container[el] = sum;
+    });
+    return container;
+  }
+
+  function rawRate(dataset, reference, columnReference, k = 100000) {
+    let cases = getTotal("casi", reference, columnReference, dataset);
+    let population = getTotal(
+      "popolazione",
+      reference,
+      columnReference,
+      dataset
+    );
+    let rate = {};
+    reference.forEach((el) => {
+      if (cases[el] === 0) {
+        rate[el] = 0;
+      } else {
+        rate[el] = cases[el] / population[el];
+        rate[el] =
+          k !== 100000
+            ? (rate[el] = rate[el] * k)
+            : (rate[el] = +(rate[el] * k).toFixed(2));
+      }
+    });
+    return rate;
+  }
+
+  function intervalloTg(reference, dataset, column, columnReference, k) {
+    let tassi = rawRate(dataset, reference, columnReference, (k = 1));
+    let popolazione = getTotal(column, reference, columnReference, dataset);
+    let sqrt = 0;
+    let container = {};
+    reference.forEach((el) => {
+      let obj = {
+        tasso: 0,
+        lcl: 0,
+        ucl: 0,
+      };
+      if (tassi[el] === 0 || popolazione[el] === 0) {
+        sqrt = 0;
+      } else {
+        sqrt = Math.sqrt(tassi[el] / popolazione[el]);
+      }
+      obj.lcl = +(Math.max(0, tassi[el] - 1.96 * sqrt) * 100000).toFixed(2);
+      obj.ucl = +(Math.min(1, tassi[el] + 1.96 * sqrt) * 100000).toFixed(2);
+      obj.tasso = +(tassi[el] * 100000).toFixed(2);
+      container[el] = obj;
+    });
+    return container;
+  }
+
+  // *****************************END FUNCTION FOR CALCULATIONS*****************************
 
   const [checkboxes, setCheckboxes] = useState([
-    { id: 1, label: "2020", checked: true },
-    { id: 2, label: "2019", checked: false },
-    { id: 3, label: "2018", checked: false },
-    { id: 4, label: "2017", checked: false },
-    { id: 5, label: "2016", checked: false },
-    { id: 6, label: "2015", checked: false },
-    { id: 7, label: "2014", checked: false },
-    { id: 8, label: "2013", checked: false },
-    { id: 9, label: "2012", checked: false },
-    { id: 10, label: "2011", checked: false },
-    { id: 11, label: "2010", checked: false },
-    { id: 12, label: "2009", checked: false },
-    { id: 13, label: "2008", checked: false },
-    { id: 14, label: "2007", checked: false },
-    { id: 15, label: "2006", checked: false },
+    { id: 1, label: 2020, checked: true },
+    { id: 2, label: 2019, checked: false },
+    { id: 3, label: 2018, checked: false },
+    { id: 4, label: 2017, checked: false },
+    { id: 5, label: 2016, checked: false },
+    { id: 6, label: 2015, checked: false },
+    { id: 7, label: 2014, checked: false },
+    { id: 8, label: 2013, checked: false },
+    { id: 9, label: 2012, checked: false },
+    { id: 10, label: 2011, checked: false },
+    { id: 11, label: 2010, checked: false },
+    { id: 12, label: 2009, checked: false },
+    { id: 13, label: 2008, checked: false },
+    { id: 14, label: 2007, checked: false },
+    { id: 15, label: 2006, checked: false },
   ]);
 
   // SELECTABLE AGES
@@ -174,7 +229,6 @@ const Chart1 = (patology) => {
         .map((checkbox) => checkbox.label);
 
       setSelectedYears(selectedYears);
-      console.log("selected Years", selectedYears);
       return updatedCheckboxes;
     });
   };
@@ -190,7 +244,6 @@ const Chart1 = (patology) => {
         checked: false,
       }));
       setSelectedYears([]);
-
       return updatedCheckboxes;
     });
   };
@@ -199,15 +252,9 @@ const Chart1 = (patology) => {
     setCheckboxes((prevCheckboxes) => {
       const updatedCheckboxes = prevCheckboxes.map((checkbox) => ({
         ...checkbox,
-        checked: checkbox.label
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()),
+        checked: true,
       }));
-      setSelectedYears(
-        updatedCheckboxes
-          .filter((checkbox) => checkbox.checked)
-          .map((checkbox) => checkbox.label)
-      );
+      setSelectedYears(updatedCheckboxes.map((checkbox) => checkbox.label));
       return updatedCheckboxes;
     });
   };
@@ -250,13 +297,12 @@ const Chart1 = (patology) => {
         .filter((option) => option.checked)
         .map((option) => option.label);
       setSelectedAge(selectedAge);
-      console.log("Selected ages", selectedAge);
       return updateAge;
     });
   };
 
   const filteredCheckboxes = checkboxes.filter((checkbox) =>
-    checkbox.label.toLowerCase().includes(searchTerm.toLowerCase())
+    checkbox.label.toString().includes(searchTerm.toString().toLowerCase())
   );
 
   const filteredEtaOptions = ageOptions.filter((option) =>
@@ -303,39 +349,99 @@ const Chart1 = (patology) => {
     });
     setSelectedSex("Maschi e Femmine");
     setSelectedAge([]);
-    console.log("RATE AFTER RESTORATION:", selectedRate);
-    console.log("YEARS AFTER RESTORATION:", selectedYears);
-    console.log("SEX AFTER RESTORATION:", selectedSex);
-    console.log("AGE AFTER RESTORATION:", selectedAge);
   };
 
+  //Initialize chart
   highchartsMore(Highcharts);
+
+  const [loading, setLoading] = useState(false);
+  let [values, setValues] = useState({});
+  const [referenceData, setReferenceData] = useState([]);
+  let [intervalsTG, setIntervalsTG] = useState({});
+
+  const fetchData = async (newFilters) => {
+    try {
+      setLoading(true);
+      await sendFilter(newFilters);
+      console.log("array of Obj Data: ", data);
+
+      const aslList = data[0].reduce(
+        (l, i) => (l.indexOf(i.Asl) !== -1 ? l : l.concat([i.Asl])),
+        []
+      );
+      setReferenceData(aslList);
+
+      setValues(rawRate(data[0], aslList, "Asl"));
+      setIntervalsTG(intervalloTg(aslList, data[0], "popolazione", "Asl"));
+      console.log("Intervals TG nella funzione ", intervalsTG);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //conversion to array of objects of values
+  let newValues = Object.keys(values).map((key) => ({
+    name: key,
+    y: values[key],
+  }));
+
+  //conversion to array of objects of intervalsTG
+  // console.log("intervallo tg", intervalsTG);
+  let newIntervalsTG = Object.keys(intervalsTG).map((key) => ({
+    high: intervalsTG[key].ucl,
+    low: intervalsTG[key].lcl,
+  }));
+  // console.log("IntervalliTG dopo essere diventati oggetti: ", newIntervalsTG);
+
+  const handleChangeFilters = () => {
+    const newFilters = {
+      patology: patology.name,
+      filters: {
+        years: `${selectedYears}`,
+        age: `${selectedAge}`,
+        sex: `${selectedSex}`,
+      },
+    };
+    fetchData(newFilters);
+  };
+
+  useEffect(() => {
+    handleChangeFilters();
+  }, [selectedYears, selectedAge, selectedSex]);
 
   // CHART SETTINGS
   const options = {
+    credits: {
+      enabled: false,
+    },
     title: {
       text: "Incidenza Polmonare per ASL e Regione",
     },
     subtitle: {
       text: `polmone, ${selectedYears},TS, Regione, Asl, ${selectedSex}, ${selectedAge}`,
     },
-    xAxis: {
-      title: null,
-      // categories: asl,
-    },
-    yAxis: {
-      title: null,
-      tickPixelInterval: 85,
-      labels: {
-        formatter: function () {
-          return this.value;
-        },
-      },
-      // plotLines: regionRange,
+    legend: {
+      enabled: false,
     },
     chart: {
       type: "scatter",
       inverted: true,
+    },
+    yAxis: {
+      title: null,
+      // tickPixelInterval: 85,
+      // labels: {
+      //   formatter: function () {
+      //     return this.value;
+      //   },
+      // },
+      // plotLines: regionRange,
+    },
+    xAxis: {
+      title: null,
+      categories: referenceData,
     },
     plotOptions: {
       scatter: {
@@ -358,16 +464,16 @@ const Chart1 = (patology) => {
     series: [
       {
         name: "Incidenza",
-        // data: values,
+        data: newValues,
         zIndex: 1,
         tooltip: {
-          pointFormat: RateName + ": {point.y}",
+          pointFormat: "Tasso grezzo: {point.y}",
         },
       },
       {
         name: "Intervallo",
         type: "columnrange",
-        // data: intervals,
+        data: newIntervalsTG,
         pointWidth: 0,
         zIndex: 0,
         tooltip: {
@@ -378,8 +484,13 @@ const Chart1 = (patology) => {
   };
 
   return (
-    
     <div>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/icon?family=Material+Icons"
+        ></link>
+      </head>
       <div className="mt-5">
         {/* FILTERS */}
         <div className="flex xs:flex-col sm:flex-row items-center space-x-3 xs:pl-2 md:pl-4 lg:pl-16 w-auto justify-between ">
@@ -420,7 +531,7 @@ const Chart1 = (patology) => {
                     <div className="flex ">
                       <input
                         checked={RateName === "Tasso grezzo"}
-                        id="TassoGrezzo"
+                        id="rawRate"
                         type="radio"
                         value="Tasso grezzo"
                         name="rate"
@@ -430,7 +541,7 @@ const Chart1 = (patology) => {
                         }}
                       />
                       <label
-                        for="TassoGrezzo"
+                        for="rawRate"
                         className=" ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
                       >
                         Tasso grezzo
@@ -639,7 +750,9 @@ const Chart1 = (patology) => {
                   >
                     Pulisci
                   </button>
-                  <button onClick={handleSelectAllYears}>Seleziona tutti</button>
+                  <button onClick={handleSelectAllYears}>
+                    Seleziona tutti
+                  </button>
                   {filteredEtaOptions.map((option) => (
                     <div
                       className={` w-full flex hover:bg-gray-400 pl-1 pr-1 ${
@@ -682,10 +795,20 @@ const Chart1 = (patology) => {
         </div>
         {/* CHART */}
         <div className="static z-40">
-          <HighchartsReact highcharts={Highcharts} options={options} />
+          {loading ? (
+            <div className="h-96">
+              <i
+                className="material-icons rotating-icon animate-spin text-9xl w-32 h-32 mt-10"
+                style={{ fontSize: "128px" }}
+              >
+                sync
+              </i>
+            </div>
+          ) : (
+            <HighchartsReact highcharts={Highcharts} options={options} />
+          )}
         </div>
       </div>
-      <button onClick={handleChangeFilters}>PREMI</button>
     </div>
   );
 };
