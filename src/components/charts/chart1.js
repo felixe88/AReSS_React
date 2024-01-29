@@ -44,8 +44,34 @@ const Chart1 = (patology) => {
   let data = [];
   const sendFilter = async ($filter) => {
     try {
-      console.log("filter:", $filter);
       const response = await fetch("http://localhost:8000/query-patologie", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify($filter),
+      });
+      if (response.ok) {
+        const responseData = await response.json();
+        data = responseData;
+        return data;
+      } else {
+        console.error(
+          "Error to send filter",
+          response.status,
+          response.statusText
+        );
+      }
+    } catch (error) {
+      console.error("General error:", error);
+    }
+  };
+
+
+  const queryPesoEu = async ($filter) => {
+    try {
+      const response = await fetch("http://localhost:8000/query-peso-eu", {
         method: "POST",
         headers: {
           Accept: "application/json",
@@ -71,28 +97,190 @@ const Chart1 = (patology) => {
 
   // *****************************FUNCTION FOR CALCULATIONS*****************************
 
-  function getTotal(column, reference, columnReference, dataset) {
+  function getTotal(column, reference, columnReference, dataset, region = false) {
     let tempDataset = null,
       container = {};
     reference.forEach((el) => {
       let sum = 0;
-      tempDataset = dataset.filter((d) => d[columnReference] === el);
-      tempDataset.forEach((row) => {
-        sum += row[column];
-      });
-      container[el] = sum;
+      if (region === false) {
+        tempDataset = dataset.filter((d) => d[columnReference] === el);
+        tempDataset.forEach((row) => {
+          sum += row[column];
+        });
+        container[el] = sum;
+      } else {
+        dataset.forEach((row) => {
+          sum += row[column];
+        });
+        container[el] = sum;
+      }
     });
+
     return container;
   }
 
-  function rawRate(dataset, reference, columnReference, k = 100000) {
-    let cases = getTotal("casi", reference, columnReference, dataset);
-    let population = getTotal(
-      "popolazione",
-      reference,
-      columnReference,
-      dataset
-    );
+  //STANDARD RATE-INTERVAL TS ************ TO DO
+
+  function calcoloWi(reference, dataset, columnReference, container, region = false) {
+    reference.forEach((riferimento) => {
+      const TempDataset = dataset.filter((d) => d.Asl === riferimento);
+      const obj = {};
+
+      TempDataset.forEach((riga) => {
+        const object = container.find(item => item.anno === riga.anno);
+        const sommaPesoEu = object ? object.somma_peso_eu : null;
+        // Debug
+        // console.log('Riferimento:', riferimento, 'Classe_eta:', riga.classe_eta, 'Peso_eu:', riga.peso_eu, 'Somma_peso_eu:', sommaPesoEu);
+
+        obj[riga.classe_eta] = sommaPesoEu !== 0
+          ? riga.peso_eu / sommaPesoEu
+          : 0;
+
+        // Debug
+        // console.log('Risultato calcolo:', obj[riga.classe_eta]);
+      });
+
+      container[riferimento] = obj;
+    });
+
+    const ultime6Righe = {};
+    const referenceKeys = reference.slice(-6);
+
+    referenceKeys.forEach((key) => {
+      ultime6Righe[key] = container[key];
+    });
+
+    return ultime6Righe;
+  }
+
+  function tassoStandard(reference, data, columnReference, container, region = false, k = 100000) {
+    let dataset = null;
+    let wi = calcoloWi(reference, data, columnReference, container, region);
+    let ti = 0;
+    let tassi = {};
+    reference.forEach((el) => {
+      let sommatoria = {
+        numeratore: 0,
+        denominatore: 0,
+      };
+      dataset = data.filter((d) => d.Asl === el);
+      dataset.forEach((riga) => {
+        var righeClasse = dataset.filter((r) => r.classe_eta === riga.classe_eta);
+        let casiTot = righeClasse.reduce((sum, e) => sum + e.casi, 0);
+        let popTot = righeClasse.reduce((sum, e) => sum + e.popolazione, 0);
+        ti = popTot !== 0 ? casiTot / popTot : 0;
+        sommatoria.numeratore += wi[el][riga.classe_eta] * ti;
+        sommatoria.denominatore += wi[el][riga.classe_eta];
+      });
+      tassi[el] = sommatoria.numeratore / sommatoria.denominatore;
+      tassi[el] =
+        k !== 100000
+          ? (tassi[el] = tassi[el] * k)
+          : (tassi[el] = +(tassi[el] * k).toFixed(2));
+    });
+    return tassi;
+  }
+
+  function calcoloEsLogTs(data, reference, columnReference, container, region = false) {
+    let newData = data.map((riga) => {
+      return {
+        Asl: riga.Asl,
+        comune: riga.Comune,
+        anno: riga.anno,
+        classe_eta: riga.classe_eta,
+        popolazione: riga.popolazione,
+        casi: riga.casi,
+      }
+    })
+    let wi = calcoloWi(reference, data, columnReference, container, region);
+    let tassi = tassoStandard(reference, data, columnReference, container, region, 1);
+    let es = {};
+
+    reference.forEach((el) => {
+      let dataset = newData.filter((d) => d.Asl === el);
+
+      let sommatoria = 0;
+
+      // Aggrega i dati per classe d'età e Asl
+      let aggregatedData = dataset.reduce((accumulator, riga) => {
+        const classeEta = riga.classe_eta;
+        accumulator[classeEta] = accumulator[classeEta] || { popolazione: 0, casi: 0 };
+
+        accumulator[classeEta].popolazione += riga.popolazione;
+        accumulator[classeEta].casi += riga.casi;
+
+        return accumulator;
+      }, {});
+
+      // Calcola sommatoria considerando le nuove aggregazioni
+      Object.keys(aggregatedData).forEach((classeEta) => {
+        const rigaAggregata = aggregatedData[classeEta];
+        let valore = rigaAggregata.casi / Math.pow(rigaAggregata.popolazione, 2);
+        sommatoria += Math.pow(wi[el][classeEta], 2) * valore;
+      });
+
+      sommatoria = Math.sqrt(sommatoria);
+
+      if (sommatoria === 0 || tassi[el] === 0) {
+        es[el] = 0;
+      } else {
+        es[el] = sommatoria / tassi[el];
+      }
+    });
+
+    return es;
+  }
+
+  function intervalloTs(reference, dataset, columnReference, container, region = false) {
+    let tassi = tassoStandard(reference, dataset, columnReference, container, region, 1);
+    console.log('TassiIntervallo', tassi);
+    let esLog = calcoloEsLogTs(dataset, reference, columnReference, container, region);
+    console.log('LOG', esLog)
+
+    let valore = 0;
+    let containerResult = {};
+    if (region === false) {
+      reference.forEach((el) => {
+        let obj = {
+          tasso: 0,
+          lcl: 0,
+          ucl: 0,
+        };
+        valore = 1.96 * esLog[el];
+        obj.lcl = +(Math.exp(Math.log(tassi[el]) - valore) * 100000).toFixed(2);
+        obj.ucl = +(Math.exp(Math.log(tassi[el]) + valore) * 100000).toFixed(2);
+        obj.tasso = +(tassi[el] * 100000).toFixed(2);
+        containerResult[el] = obj;
+      });
+    } else {
+      reference.forEach((el) => {
+        let obj = {
+          tasso: 0,
+          lcl: 0,
+          ucl: 0,
+        };
+        valore = 1.96 * esLog[el];
+        obj.lcl = +(Math.exp(Math.log(tassi[el]) - valore) * 100000).toFixed(2);
+        obj.ucl = +(Math.exp(Math.log(tassi[el]) + valore) * 100000).toFixed(2);
+        obj.tasso = +(tassi[el] * 100000).toFixed(2);
+        containerResult[el] = obj;
+      }
+      )
+    }
+    // Get the last 6 values from the containerResult
+    let lastSixValues = Object.keys(containerResult).slice(-6).reduce((result, key) => {
+      result[key] = containerResult[key];
+      return result;
+    }, {});
+
+    return lastSixValues;
+  }
+
+
+  //RAW RATE-INTERVAL TG 
+  function rawRate(dataset, reference, columnReference, region = false, k = 100000) {
+    let cases = getTotal("casi", reference, columnReference, dataset, region);
+    let population = getTotal("popolazione", reference, columnReference, dataset, region);
     let rate = {};
     reference.forEach((el) => {
       if (cases[el] === 0) {
@@ -108,29 +296,50 @@ const Chart1 = (patology) => {
     return rate;
   }
 
-  function intervalloTg(reference, dataset, column, columnReference, k) {
-    let tassi = rawRate(dataset, reference, columnReference, (k = 1));
-    let popolazione = getTotal(column, reference, columnReference, dataset);
+  function intervalloTg(reference, dataset, column, columnReference, region = false, k) {
+    let tassi = rawRate(dataset, reference, columnReference, region, (k = 1));
+    let popolazione = getTotal(column, reference, columnReference, dataset, region);
     let sqrt = 0;
     let container = {};
-    reference.forEach((el) => {
-      let obj = {
-        tasso: 0,
-        lcl: 0,
-        ucl: 0,
-      };
-      if (tassi[el] === 0 || popolazione[el] === 0) {
-        sqrt = 0;
-      } else {
-        sqrt = Math.sqrt(tassi[el] / popolazione[el]);
-      }
-      obj.lcl = +(Math.max(0, tassi[el] - 1.96 * sqrt) * 100000).toFixed(2);
-      obj.ucl = +(Math.min(1, tassi[el] + 1.96 * sqrt) * 100000).toFixed(2);
-      obj.tasso = +(tassi[el] * 100000).toFixed(2);
-      container[el] = obj;
-    });
+
+    if (region === false) {
+      reference.forEach((el) => {
+        let obj = {
+          tasso: 0,
+          lcl: 0,
+          ucl: 0,
+        };
+        if (tassi[el] === 0 || popolazione[el] === 0) {
+          sqrt = 0;
+        } else {
+          sqrt = Math.sqrt(tassi[el] / popolazione[el]);
+        }
+        obj.lcl = +(Math.max(0, tassi[el] - 1.96 * sqrt) * 100000).toFixed(2);
+        obj.ucl = +(Math.min(1, tassi[el] + 1.96 * sqrt) * 100000).toFixed(2);
+        obj.tasso = +(tassi[el] * 100000).toFixed(2);
+        container[el] = obj;
+      });
+    } else {
+      reference.forEach((el) => {
+        let obj = {
+          tasso: 0,
+          lcl: 0,
+          ucl: 0,
+        };
+        if (tassi[el] === 0 || popolazione[el] === 0) {
+          sqrt = 0;
+        } else {
+          sqrt = Math.sqrt(tassi[el] / popolazione[el]);
+        }
+        obj.lcl = +(Math.max(0, tassi[el] - 1.96 * sqrt) * 100000).toFixed(2);
+        obj.ucl = +(Math.min(1, tassi[el] + 1.96 * sqrt) * 100000).toFixed(2);
+        obj.tasso = +(tassi[el] * 100000).toFixed(2);
+        container[el] = obj;
+      });
+    }
     return container;
   }
+
 
   // *****************************END FUNCTION FOR CALCULATIONS*****************************
 
@@ -358,22 +567,37 @@ const Chart1 = (patology) => {
   let [values, setValues] = useState({});
   const [referenceData, setReferenceData] = useState([]);
   let [intervalsTG, setIntervalsTG] = useState({});
+  let [regionRaw, setRegionRaw] = useState({});
+  let [regionInterval, setRegionInterval] = useState({});
+  let [peso_eu, setPeso_eu] = useState({});
+
+
 
   const fetchData = async (newFilters) => {
     try {
       setLoading(true);
+      const peso_eu_data = await queryPesoEu();
       await sendFilter(newFilters);
-      console.log("array of Obj Data: ", data);
-
       const aslList = data[0].reduce(
         (l, i) => (l.indexOf(i.Asl) !== -1 ? l : l.concat([i.Asl])),
         []
       );
       setReferenceData(aslList);
-
+      //TG CALL OK
       setValues(rawRate(data[0], aslList, "Asl"));
       setIntervalsTG(intervalloTg(aslList, data[0], "popolazione", "Asl"));
-      console.log("Intervals TG nella funzione ", intervalsTG);
+      setRegionRaw(rawRate(data[0], ["Puglia"], "Asl", true));
+      setRegionInterval(intervalloTg(["Puglia"], data[0], "popolazione", "Asl", true));
+      //
+
+
+
+      //TS CALL
+
+      console.log('calcoloEsLogTs', calcoloEsLogTs(data[0], aslList, "Asl", peso_eu, false));
+      console.log('Intervallo Asl', intervalloTs(aslList, data[0], 'Asl', peso_eu_data, false))
+      console.log('Intervallo Puglia', intervalloTs(["Puglia"], data[0], 'Asl', peso_eu_data, true));
+
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -381,19 +605,17 @@ const Chart1 = (patology) => {
     }
   };
 
-  //conversion to array of objects of values
+  //conversion to array of objects of values for the graph
   let newValues = Object.keys(values).map((key) => ({
     name: key,
     y: values[key],
   }));
 
-  //conversion to array of objects of intervalsTG
-  // console.log("intervallo tg", intervalsTG);
+  //conversion to array of objects of intervalsTG for the graph
   let newIntervalsTG = Object.keys(intervalsTG).map((key) => ({
     high: intervalsTG[key].ucl,
     low: intervalsTG[key].lcl,
   }));
-  // console.log("IntervalliTG dopo essere diventati oggetti: ", newIntervalsTG);
 
   const handleChangeFilters = () => {
     const newFilters = {
@@ -410,6 +632,28 @@ const Chart1 = (patology) => {
   useEffect(() => {
     handleChangeFilters();
   }, [selectedYears, selectedAge, selectedSex]);
+
+  // let region = {
+  //   y: tassiVisible["Puglia"]["tasso"],
+  //   marker: {
+  //     symbol: "diamond",
+  //   },
+  // };
+
+  // let regionRange = [
+  //   {
+  //     value: tassiVisible["Puglia"]["lcl"],
+  //     color: "red",
+  //     width: 1,
+  //     dashStyle: "solid",
+  //   },
+  //   {
+  //     value: tassiVisible["Puglia"]["ucl"],
+  //     color: "red",
+  //     width: 1,
+  //     dashStyle: "solid",
+  //   },
+  // ];
 
   // CHART SETTINGS
   const options = {
@@ -509,20 +753,20 @@ const Chart1 = (patology) => {
               {isRateOpen && (
                 <div className="pr-32">
                   <div className=" flex flex-col p-1 h-20 w-40 bg-white border border-gray-400 absolute z-10 rounded-md">
-                    <div class="flex mt-1">
+                    <div className="flex mt-1">
                       <input
                         checked={RateName === "Tasso standard"}
                         id="TassoStandard"
                         type="radio"
                         value="Tasso standard"
                         name="rate"
-                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
-                        onClick={() => {
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
+                        onChange={() => {
                           setRateName("Tasso standard");
                         }}
                       />
                       <label
-                        for="TassoStandard"
+                        htmlFor="TassoStandard"
                         className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
                       >
                         Tasso standard
@@ -536,12 +780,12 @@ const Chart1 = (patology) => {
                         value="Tasso grezzo"
                         name="rate"
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
-                        onClick={() => {
+                        onChange={() => {
                           setRateName("Tasso grezzo");
                         }}
                       />
                       <label
-                        for="rawRate"
+                        htmlFor="rawRate"
                         className=" ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
                       >
                         Tasso grezzo
@@ -555,12 +799,12 @@ const Chart1 = (patology) => {
                         value="SIR"
                         name="rate"
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
-                        onClick={() => {
+                        onChange={() => {
                           setRateName("SIR");
                         }}
                       />
                       <label
-                        for="SIR"
+                        htmlFor="SIR"
                         className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
                       >
                         SIR
@@ -610,9 +854,8 @@ const Chart1 = (patology) => {
                   <button onClick={handleSelectAll}>Seleziona tutti</button>
                   {filteredCheckboxes.map((checkbox) => (
                     <div
-                      className={`flex w-auto hover:bg-gray-400 pl-1 pr-1 ${
-                        checkbox.checked ? "bg-slate-300" : ""
-                      } `}
+                      className={`flex w-auto hover:bg-gray-400 pl-1 pr-1 ${checkbox.checked ? "bg-slate-300" : ""
+                        } `}
                       key={checkbox.id}
                     >
                       <input
@@ -653,45 +896,45 @@ const Chart1 = (patology) => {
               {isSexOpen && (
                 <div className="pr-32">
                   <div className=" flex flex-col p-1 h-20 w-44 bg-white border border-gray-400 rounded-md absolute z-10">
-                    <div class="flex mt-1">
+                    <div className="flex mt-1">
                       <input
                         checked={selectedSex === "Maschi e Femmine"}
                         id="Maschi e Femmine"
                         type="radio"
                         value="Maschi e Femmine"
                         name="sex"
-                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
-                        onClick={() => {
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
+                        onChange={() => {
                           setSelectedSex("Maschi e Femmine");
                         }}
                       />
                       <label
-                        for="Maschi e Femmine"
+                        htmlFor="Maschi e Femmine"
                         className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
                       >
                         Maschi e Femmine
                       </label>
                     </div>
-                    <div class="flex mt-1">
+                    <div className="flex mt-1">
                       <input
                         checked={selectedSex === "Maschi"}
                         id="Maschi"
                         type="radio"
                         value="Maschi"
                         name="sex"
-                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
-                        onClick={() => {
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
+                        onChange={() => {
                           setSelectedSex("Maschi");
                         }}
                       />
                       <label
-                        for="Maschi"
+                        htmlFor="Maschi"
                         className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
                       >
                         Maschi
                       </label>
                     </div>
-                    <div class="flex mt-1">
+                    <div className="flex mt-1">
                       <input
                         checked={selectedSex === "Femmine"}
                         id="Femmine"
@@ -699,12 +942,12 @@ const Chart1 = (patology) => {
                         value="Femmine"
                         name="sex"
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  "
-                        onClick={() => {
+                        onChange={() => {
                           setSelectedSex("Femmine");
                         }}
                       />
                       <label
-                        for="Femmine"
+                        htmlFor="Femmine"
                         className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
                       >
                         Femmine
@@ -755,9 +998,8 @@ const Chart1 = (patology) => {
                   </button>
                   {filteredEtaOptions.map((option) => (
                     <div
-                      className={` w-full flex hover:bg-gray-400 pl-1 pr-1 ${
-                        option.checked ? "bg-slate-300" : ""
-                      } `}
+                      className={` w-full flex hover:bg-gray-400 pl-1 pr-1 ${option.checked ? "bg-slate-300" : ""
+                        } `}
                       key={option.id}
                     >
                       <input
@@ -798,10 +1040,10 @@ const Chart1 = (patology) => {
           {loading ? (
             <div className="h-96">
               <i
-                className="material-icons rotating-icon animate-spin text-9xl w-32 h-32 mt-10"
-                style={{ fontSize: "128px" }}
+                className="material-icons rotating-icon animate-spin text-9xl h-72 mt-10"
+                style={{ fontSize: "288px" }}
               >
-                sync
+                refresh
               </i>
             </div>
           ) : (
